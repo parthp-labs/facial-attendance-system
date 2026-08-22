@@ -4,11 +4,11 @@ from pathlib import Path
 DATABASE_PATH = Path(__file__).parent / "attendance.db"
 
 
-def get_connection():
+def get_connection(database_path=DATABASE_PATH):
     return sqlite3.connect(DATABASE_PATH)
 
 
-def initialize_database():
+def initialize_database(database_path=DATABASE_PATH):
     connection = get_connection()
 
     cursor = connection.cursor()
@@ -41,7 +41,7 @@ def initialize_database():
     connection.close()
 
 
-def add_person(name, face_encoding):
+def add_person(name, face_encoding, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -61,7 +61,7 @@ def add_person(name, face_encoding):
     return person_id
 
 
-def get_person(person_id):
+def get_person(person_id, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -81,7 +81,7 @@ def get_person(person_id):
     return person
 
 
-def get_person_by_name(name):
+def get_person_by_name(name, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -101,7 +101,7 @@ def get_person_by_name(name):
     return person
 
 
-def get_all_persons():
+def get_all_persons(database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -120,7 +120,7 @@ def get_all_persons():
     return persons
 
 
-def get_today_attendance(person_id, date):
+def get_today_attendance(person_id, date, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -140,7 +140,7 @@ def get_today_attendance(person_id, date):
     return attendance
 
 
-def create_entry(person_id, date, entry_time):
+def create_entry(person_id, date, entry_time, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -164,7 +164,7 @@ def create_entry(person_id, date, entry_time):
     return attendance_id
 
 
-def create_exit(attendance_id, exit_time):
+def create_exit(attendance_id, exit_time, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
 

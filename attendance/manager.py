@@ -5,15 +5,24 @@ from database.database import (
 )
 
 
-def process_attendance(person_id, date, current_time):
-    attendance = get_today_attendance(person_id, date)
+def process_attendance(
+    person_id,
+    date,
+    current_time,
+    database_path=None
+):
+    attendance = get_today_attendance(
+        person_id,
+        date,
+        database_path
+    )
 
-    # No attendance record today
     if attendance is None:
         attendance_id = create_entry(
             person_id,
             date,
-            current_time
+            current_time,
+            database_path
         )
 
         return "IN", attendance_id
@@ -21,14 +30,13 @@ def process_attendance(person_id, date, current_time):
     attendance_id = attendance[0]
     exit_time = attendance[4]
 
-    # Entry exists, but person has not exited
     if exit_time is None:
         create_exit(
             attendance_id,
-            current_time
+            current_time,
+            database_path
         )
 
         return "OUT", attendance_id
 
-    # Both IN and OUT already exist
     return "IGNORE", attendance_id
