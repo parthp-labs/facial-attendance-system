@@ -5,7 +5,8 @@ from recognition.detector import FaceDetector
 from recognition.recognizer import FaceRecognizer
 from recognition.encoding import deserialize_embedding
 from database.database import get_all_persons
-
+from attendance.manager import process_attendance
+from utils.time import get_current_date, get_current_time
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -86,15 +87,17 @@ def main():
             if person is not None:
                 person_id, name, _ = person
 
-                label = (
-                    f"{name} "
-                    f"{similarity:.2f}"
-                )
+                date = get_current_date()
+                current_time = get_current_time()
+
+                action, attendance_id = process_attendance(person_id, date,
+                                                           current_time
+                                                           )
+
+                label = (f"{name} "f"{similarity:.2f} " f"{action}")
 
                 print(
-                    f"Recognized: {name} "
-                    f"(similarity={similarity:.3f})"
-                )
+                    f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
 
             else:
                 label = (
