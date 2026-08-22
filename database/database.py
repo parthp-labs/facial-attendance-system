@@ -118,3 +118,64 @@ def get_all_persons():
     connection.close()
 
     return persons
+
+
+def get_today_attendance(person_id, date):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, person_id, date, entry_time, exit_time, synced
+        FROM attendance
+        WHERE person_id = ? AND date = ?
+        """,
+        (person_id, date)
+    )
+
+    attendance = cursor.fetchone()
+
+    connection.close()
+
+    return attendance
+
+
+def create_entry(person_id, date, entry_time):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO attendance (
+            person_id,
+            date,
+            entry_time
+        )
+        VALUES (?, ?, ?)
+        """,
+        (person_id, date, entry_time)
+    )
+
+    attendance_id = cursor.lastrowid
+
+    connection.commit()
+    connection.close()
+
+    return attendance_id
+
+
+def create_exit(attendance_id, exit_time):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE attendance
+        SET exit_time = ?, synced = 0
+        WHERE id = ?
+        """,
+        (exit_time, attendance_id)
+    )
+
+    connection.commit()
+    connection.close()
