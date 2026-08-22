@@ -7,3 +7,4 @@ database/*.db
 logs/*
 data/encodings/*
 .env
+/test_images
