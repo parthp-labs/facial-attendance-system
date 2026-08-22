@@ -5,7 +5,7 @@ DATABASE_PATH = Path(__file__).parent / "attendance.db"
 
 
 def get_connection(database_path=DATABASE_PATH):
-    return sqlite3.connect(DATABASE_PATH)
+    return sqlite3.connect(database_path)
 
 
 def initialize_database(database_path=DATABASE_PATH):
