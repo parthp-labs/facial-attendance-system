@@ -7,6 +7,7 @@ from recognition.encoding import deserialize_embedding
 from database.database import get_all_persons
 from attendance.manager import process_attendance
 from utils.time import get_current_date, get_current_time
+from utils.display import gui_available
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -26,7 +27,7 @@ def find_best_match(embedding, persons, recognizer):
     best_similarity = -1.0
 
     for person in persons:
-        person_id, name, face_encoding = person
+        person_id, name, face_encoding, sheet_id = person
 
         stored_embedding = deserialize_embedding(face_encoding)
 
@@ -85,7 +86,7 @@ def main():
             )
 
             if person is not None:
-                person_id, name, _ = person
+                person_id, name, _, sheet_id = person
 
                 date = get_current_date()
                 current_time = get_current_time()
@@ -123,15 +124,17 @@ def main():
                 2
             )
 
-        cv2.imshow("Face Recognition", frame)
+        if gui_available:
+            cv2.imshow("Face Recognition", frame)
 
-        key = cv2.waitKey(1) & 0xFF
+            key = cv2.waitKey(1) & 0xFF
 
-        if key == ord("q"):
-            break
+            if key == ord("q"):
+                break
 
     camera.stop()
-    cv2.destroyAllWindows()
+    if gui_available:
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

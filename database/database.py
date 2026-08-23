@@ -43,6 +43,52 @@ def initialize_database(database_path=DATABASE_PATH):
     connection.close()
 
 
+def get_unsynced_attendance(database_path=DATABASE_PATH):
+    connection = get_connection(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            attendance.id,
+            attendance.person_id,
+            attendance.date,
+            attendance.entry_time,
+            attendance.exit_time,
+            persons.name,
+            persons.sheet_id
+        FROM attendance
+        JOIN persons
+            ON attendance.person_id = persons.id
+        WHERE attendance.synced = 0
+        ORDER BY attendance.id
+        """
+    )
+
+    attendance = cursor.fetchall()
+
+    connection.close()
+
+    return attendance
+
+
+def mark_attendance_synced(attendance_id, database_path=DATABASE_PATH):
+    connection = get_connection(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE attendance
+        SET synced = 1
+        WHERE id = ?
+        """,
+        (attendance_id,)
+    )
+
+    connection.commit()
+    connection.close()
+
+
 def add_person(name, face_encoding, database_path=DATABASE_PATH):
     connection = get_connection()
     cursor = connection.cursor()
@@ -177,6 +223,23 @@ def create_exit(attendance_id, exit_time, database_path=DATABASE_PATH):
         WHERE id = ?
         """,
         (exit_time, attendance_id)
+    )
+
+    connection.commit()
+    connection.close()
+
+
+def update_sheet_id(person_id, sheet_id, database_path=DATABASE_PATH):
+    connection = get_connection(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE persons
+        SET sheet_id = ?
+        WHERE id = ?
+        """,
+        (sheet_id, person_id)
     )
 
     connection.commit()

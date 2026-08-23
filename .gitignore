@@ -8,3 +8,4 @@ logs/*
 data/encodings/*
 .env
 /test_images
+credentials.json

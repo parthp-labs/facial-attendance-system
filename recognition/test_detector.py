@@ -2,6 +2,7 @@ import cv2
 
 from camera.camera import Camera
 from recognition.detector import FaceDetector
+from utils.display import gui_available
 
 
 MODEL_PATH = (
@@ -40,17 +41,19 @@ def main():
                     2,
                 )
 
-            cv2.imshow(
-                "Face Detection",
-                frame
-            )
+            if gui_available:
+                cv2.imshow(
+                    "Face Detection",
+                    frame
+                )
 
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
 
     finally:
         camera.stop()
-        cv2.destroyAllWindows()
+        if gui_available:
+            cv2.destroyAllWindows()
 
         print("Face detector stopped.")
 
