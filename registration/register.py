@@ -50,9 +50,9 @@ def main():
                 continue
 
             faces = detector.detect(frame)
-            print(gui_available)
+
             # Only do drawing if a display is present
-            if gui_available:
+            if gui_available():
                 for face in faces:
                     x, y, w, h = face[:4].astype(int)
                     cv2.rectangle(frame, (x, y), (x + w, y + h),
@@ -95,7 +95,7 @@ def main():
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
     camera.stop()
-    if gui_available:
+    if gui_available():
         cv2.destroyAllWindows()
 
 
