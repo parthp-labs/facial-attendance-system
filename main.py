@@ -8,7 +8,6 @@ import cv2
 from utils.display import gui_available
 from utils.network import is_internet_available
 from google_sync.sync import sync_database
-from google_sync.sync import sync_database
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -82,8 +81,6 @@ def main():
                         f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
 
                     camera.show_label(face, frame, label)
-
-                    # Syncing with Google Sheets
                 else:
                     label = (f"Unknown "f"{similarity:.2f}")
                     camera.show_label(face, frame, label)
@@ -94,12 +91,13 @@ def main():
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-                if cv2.waitKey(1) & 0xFF == ord("s"):
-                    if is_internet_available():
-                        print("-> Internet available.")
-                        sync_database()
-                    else:
-                        print("-> Internet unavailable. Running offline.")
+            # Syncing with Google Sheets
+            if cv2.waitKey(1) & 0xFF == ord("s"):
+                if is_internet_available():
+                    print("-> Internet available.")
+                    sync_database()
+                else:
+                    print("-> Internet unavailable. Running offline.")
 
     finally:
         camera.stop()
