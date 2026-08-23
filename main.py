@@ -10,6 +10,7 @@ from recognition.detector import FaceDetector
 from recognition.recognizer import FaceRecognizer
 from recognition.recognize import *
 import cv2
+from utils.display import gui_available
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -34,8 +35,12 @@ def main():
     detector = FaceDetector(DETECTOR_MODEL)
     recognizer = FaceRecognizer(RECOGNIZER_MODEL)
 
+    display_detected = gui_available()
     camera.start()
     print("-> Camera Started")
+
+    if not display_detected:
+        print("-> GUI not detected, running headless")
     try:
         while True:
             frame = camera.read()
@@ -77,13 +82,15 @@ def main():
                     camera.show_label(face, frame, label)
                     print(label)
 
-            cv2.imshow("Attendance", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+            if display_detected:
+                cv2.imshow("Attendance", frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
 
     finally:
         camera.stop()
-        cv2.destroyAllWindows()
+        if display_detected:
+            cv2.destroyAllWindows()
         print("-> Camera stopped")
 
 
