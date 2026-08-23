@@ -50,7 +50,7 @@ def main():
                 continue
 
             faces = detector.detect(frame)
-
+            print(gui_available)
             # Only do drawing if a display is present
             if gui_available:
                 for face in faces:
