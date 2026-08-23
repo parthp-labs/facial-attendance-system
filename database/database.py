@@ -17,7 +17,9 @@ def initialize_database(database_path=DATABASE_PATH):
         CREATE TABLE IF NOT EXISTS persons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            face_encoding BLOB NOT NULL
+            face_encoding BLOB NOT NULL,
+            sheet_id TEXT
+
         )
     """)
 
@@ -67,7 +69,7 @@ def get_person(person_id, database_path=DATABASE_PATH):
 
     cursor.execute(
         """
-        SELECT id, name, face_encoding
+        SELECT id, name, face_encoding, sheet_id
         FROM persons
         WHERE id = ?
         """,
@@ -87,7 +89,7 @@ def get_person_by_name(name, database_path=DATABASE_PATH):
 
     cursor.execute(
         """
-        SELECT id, name, face_encoding
+        SELECT id, name, face_encoding, sheet_idget_perso
         FROM persons
         WHERE name = ?
         """,
@@ -107,7 +109,7 @@ def get_all_persons(database_path=DATABASE_PATH):
 
     cursor.execute(
         """
-        SELECT id, name, face_encoding
+        SELECT id, name, face_encoding, sheet_id
         FROM persons
         ORDER BY id
         """
