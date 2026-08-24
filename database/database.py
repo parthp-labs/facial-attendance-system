@@ -135,7 +135,7 @@ def get_person_by_name(name, database_path=DATABASE_PATH):
 
     cursor.execute(
         """
-        SELECT id, name, face_encoding, sheet_idget_perso
+        SELECT id, name, face_encoding, sheet_id
         FROM persons
         WHERE name = ?
         """,
