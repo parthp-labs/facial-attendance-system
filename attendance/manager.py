@@ -13,48 +13,85 @@ def process_attendance(
     current_time,
     database_path=None
 ):
-    attendance = get_today_attendance(person_id, date, database_path)
+    try:
+        attendance = get_today_attendance(person_id, date, database_path)
 
-    print(attendance)
-    if attendance is None:
-        attendance_id = create_entry(
-            person_id,
-            date,
-            current_time,
-            database_path
-        )
+        try:
+            if attendance is None:
+                attendance_id = create_entry(
+                    person_id,
+                    date,
+                    current_time,
+                    database_path
+                )
 
-        return "IN", attendance_id
+                return "IN", attendance_id, "INSIDE"
+        except Exception as e:
+            print(f"Error creating entry: {e}")
 
-    attendance_id = attendance[0]
-    entry_time = attendance[3]
-    exit_time = attendance[4]
+            # Another process/frame may have created the entry simultaneously.
+            attendance = get_today_attendance(
+                person_id,
+                date,
+                database_path
+            )
 
-    elapsed = current_datetime - entry_datetime
+            if attendance is not None:
+                attendance_id = attendance[0]
 
-    if exit_time is not None:
-        return "IGNORE", attendance_id
+                return "IGNORE", attendance_id, "INSIDE"
 
-    # Calculate time since entry
-    entry_datetime = datetime.strptime(
-        entry_time,
-        "%H:%M:%S"
-    )
+            return "ERROR", None, "ERROR"
 
-    current_datetime = datetime.strptime(
-        current_time,
-        "%H:%M:%S"
-    )
+        attendance_id = attendance[0]
+        entry_time = attendance[3]
+        exit_time = attendance[4]
 
-    # Still inside cooldown period
-    if elapsed < timedelta(seconds=COOLDOWN_SECONDS):
-        return "IGNORE", attendance_id
+        elapsed = current_datetime - entry_datetime
 
-    # Cooldown has expired → record exit
-    create_exit(
-        attendance_id,
-        current_time,
-        database_path
-    )
+        if exit_time is not None:
+            return "IGNORE", attendance_id, "EXITED"
 
-    return "OUT", attendance_id
+        if entry_time is None:
+            print(f"Invalid attendance record "f"for person {person_id}")
+
+            return ("ERROR", attendance_id, "ERROR")
+
+        try:
+            # Calculate time since entry
+            entry_datetime = datetime.strptime(
+                entry_time,
+                "%H:%M:%S"
+            )
+
+            current_datetime = datetime.strptime(
+                current_time,
+                "%H:%M:%S"
+            )
+        except ValueError as e:
+            print(f"Invalid time format: {e}")
+
+            return ("ERROR", attendance_id, "ERROR")
+
+        if current_datetime < entry_datetime:
+            print("Current time is earlier than entry time.")
+
+            return ("ERROR", attendance_id)
+
+        elapsed = current_datetime - entry_datetime
+
+        if elapsed < timedelta(seconds=COOLDOWN_SECONDS):
+            return "IGNORE", attendance_id, "INSIDE"
+
+        try:
+            create_exit(attendance_id, current_time, database_path)
+
+            return "OUT", attendance_id, "EXITED"
+        except Exception as e:
+            print(f"Error creating exit: {e}")
+
+            return ("ERROR", attendance_id, "ERROR")
+    except Exception as e:
+        print(f"Attendance processing error: {e}")
+
+        return "ERROR", None

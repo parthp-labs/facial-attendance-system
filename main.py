@@ -87,7 +87,7 @@ def main():
                     lcd.show_welcome(name)
 
                     # Updating local database
-                    action, attendance_id = process_attendance(
+                    action, attendance_id, state = process_attendance(
                         person_id, date, current_time)
 
                     label = (
@@ -98,16 +98,23 @@ def main():
                     print(
                         f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
 
+                    if state == "INSIDE":
+                        lcd.show("Already Inside", name)
+
+                    elif state == "EXITED":
+                        lcd.show("Already Exited", name)
+
                     if action == "IN":
                         lcd.show_entry()
-
                     elif action == "OUT":
                         lcd.show_exit()
-
                     elif action == "IGNORE":
                         pass
+                    elif action == "ERROR":
+                        lcd.show_error()
+                        print(f"Attendance error for {name}")
 
-                    camera.show_label(face, frame, "label")
+                    camera.show_label(face, frame, label)
                 else:
                     label = (f"Unknown "f"{similarity:.2f}")
                     lcd.show_unknown()
@@ -119,22 +126,22 @@ def main():
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            # Syncing with Google Sheets
-            if cv2.waitKey(1) & 0xFF == ord("s"):
-                if is_internet_available():
-                    print("-> Internet available.")
-                    lcd.show_syncing()
+                # Syncing with Google Sheets
+                if cv2.waitKey(1) & 0xFF == ord("s"):
+                    if is_internet_available():
+                        print("-> Internet available.")
+                        lcd.show_syncing()
 
-                    try:
-                        sync_database()
-                        lcd.show_sync_success()
+                        try:
+                            sync_database()
+                            lcd.show_sync_success()
 
-                    except Exception as e:
-                        print(f"-> Sync failed: {e}")
-                        lcd.show_sync_failed()
-            else:
-                print("-> Internet unavailable. Running offline.")
-                lcd.show_offline()
+                        except Exception as e:
+                            print(f"-> Sync failed: {e}")
+                            lcd.show_sync_failed()
+                else:
+                    print("-> Internet unavailable. Running offline.")
+                    lcd.show_offline()
 
     finally:
         camera.stop()
