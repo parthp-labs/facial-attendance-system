@@ -37,16 +37,10 @@ class LCD:
         )
 
     def show_recognizing(self):
-        self.show(
-            "Face Detected",
-            "Recognizing..."
-        )
+        self.show("Waiting For \nDetection")
 
     def show_unknown(self):
-        self.show(
-            "Unknown Face",
-            "Access Denied"
-        )
+        self.show("Unknown Face", "Access Denied")
 
     def show_welcome(self, name):
         self.show(
