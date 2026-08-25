@@ -59,13 +59,13 @@ def main():
         print("-> GUI not detected, running headless")
     try:
         while True:
+            lcd.show_recognizing()
+
             frame = camera.read()
             faces = detector.detect(frame)
 
             for face in faces:
                 camera.draw_rect(face, frame)
-
-                lcd.show_recognizing()
 
                 # Aligning Face
                 aligned_face = recognizer.align(frame, face)
@@ -80,11 +80,9 @@ def main():
                 if person is not None:
                     person_id, name, blob, sheet_id = person
 
-                    lcd.show_person(name)
+                    lcd.show_detected(name)
                     date = get_current_date()
                     current_time = get_current_time()
-
-                    lcd.show_welcome(name)
 
                     # Updating local database
                     action, attendance_id, state = process_attendance(
@@ -98,20 +96,19 @@ def main():
                     print(
                         f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
 
-                    if state == "INSIDE":
-                        lcd.show("Already Inside", name)
-
-                    elif state == "EXITED":
-                        lcd.show("Already Exited", name)
-
                     if action == "IN":
+                        lcd.show_welcome(name)
+                        sleep(2)
                         lcd.show_entry()
+                        sleep(5)
                     elif action == "OUT":
                         lcd.show_exit()
+                        sleep(5)
                     elif action == "IGNORE":
                         pass
                     elif action == "ERROR":
                         lcd.show_error()
+                        sleep(2)
                         print(f"Attendance error for {name}")
 
                     camera.show_label(face, frame, label)
@@ -119,6 +116,7 @@ def main():
                     label = (f"Unknown "f"{similarity:.2f}")
                     lcd.show_unknown()
                     camera.show_label(face, frame, label)
+                    sleep(2)
                     print(label)
 
             if display_detected:
@@ -139,9 +137,9 @@ def main():
                         except Exception as e:
                             print(f"-> Sync failed: {e}")
                             lcd.show_sync_failed()
-                else:
-                    print("-> Internet unavailable. Running offline.")
-                    lcd.show_offline()
+                    else:
+                        print("-> Internet unavailable. Running offline.")
+                        lcd.show_offline()
 
     finally:
         camera.stop()
