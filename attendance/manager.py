@@ -2,6 +2,8 @@ from database.database import (
     get_today_attendance,
     create_entry,
     create_exit,
+    AttendanceAlreadyExistsError,
+    DatabaseError
 )
 from datetime import datetime, timedelta
 COOLDOWN_SECONDS = 3600
@@ -26,19 +28,25 @@ def process_attendance(
                 )
 
                 return "IN", attendance_id, "INSIDE"
+        except AttendanceAlreadyExistsError:
+            attendance = get_today_attendance(person_id, date, database_path)
+
+            if attendance is not None:
+                return "IGNORE", attendance[0], "INSIDE"
+
+            return "ERROR", None, "ERROR"
+        except DatabaseError as e:
+            print(f"Database error: {e}")
+
+            return "ERROR", None, "ERROR"
         except Exception as e:
             print(f"Error creating entry: {e}")
 
             # Another process/frame may have created the entry simultaneously.
-            attendance = get_today_attendance(
-                person_id,
-                date,
-                database_path
-            )
+            attendance = get_today_attendance(person_id, date, database_path)
 
             if attendance is not None:
                 attendance_id = attendance[0]
-
                 return "IGNORE", attendance_id, "INSIDE"
 
             return "ERROR", None, "ERROR"
