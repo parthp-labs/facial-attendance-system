@@ -4,8 +4,7 @@ from database.database import (
     create_exit,
 )
 from datetime import datetime, timedelta
-COOLDOWN_SECONDS = 30
-last_event_times = {}
+COOLDOWN_SECONDS = 3600
 
 
 def process_attendance(
@@ -31,10 +30,12 @@ def process_attendance(
     entry_time = attendance[3]
     exit_time = attendance[4]
 
+    elapsed = current_datetime - entry_datetime
+
     if exit_time is not None:
         return "IGNORE", attendance_id
 
-     # Calculate time since entry
+    # Calculate time since entry
     entry_datetime = datetime.strptime(
         entry_time,
         "%H:%M:%S"
@@ -44,8 +45,6 @@ def process_attendance(
         current_time,
         "%H:%M:%S"
     )
-
-    elapsed = current_datetime - entry_datetime
 
     # Still inside cooldown period
     if elapsed < timedelta(seconds=COOLDOWN_SECONDS):
