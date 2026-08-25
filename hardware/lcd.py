@@ -78,5 +78,29 @@ class LCD:
             "Try Again"
         )
 
+    def show_syncing(self):
+        self.show(
+            "Google Sheets",
+            "Syncing..."
+        )
+
+    def show_sync_success(self):
+        self.show(
+            "Google Sheets",
+            "Sync Complete"
+        )
+
+    def show_sync_failed(self):
+        self.show(
+            "Google Sheets",
+            "Sync Failed"
+        )
+
+    def show_offline(self):
+        self.show(
+            "Internet",
+            "Offline Mode"
+        )
+
     def close(self):
         self.lcd.clear()

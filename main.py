@@ -9,6 +9,7 @@ from utils.display import gui_available
 from utils.network import is_internet_available
 from google_sync.sync import sync_database
 from hardware.lcd import LCD
+from time import sleep
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -32,10 +33,18 @@ def main():
 
     if is_internet_available():
         print("-> Internet available.")
+        lcd.show_syncing()
         sync_database()
+        lcd.show_sync_success()
     else:
         print("-> Internet unavailable. Running offline.")
+        lcd.show_offline()
 
+    sleep(2)
+
+    lcd.show_ready()
+
+    # Starting Camera and Detection
     persons = get_all_persons()
     camera = Camera()
 
@@ -114,9 +123,18 @@ def main():
             if cv2.waitKey(1) & 0xFF == ord("s"):
                 if is_internet_available():
                     print("-> Internet available.")
-                    sync_database()
-                else:
-                    print("-> Internet unavailable. Running offline.")
+                    lcd.show_syncing()
+
+                    try:
+                        sync_database()
+                        lcd.show_sync_success()
+
+                    except Exception as e:
+                        print(f"-> Sync failed: {e}")
+                        lcd.show_sync_failed()
+            else:
+                print("-> Internet unavailable. Running offline.")
+                lcd.show_offline()
 
     finally:
         camera.stop()
