@@ -10,6 +10,7 @@ from utils.network import is_internet_available
 from google_sync.sync import sync_database
 from hardware.lcd import LCD
 from time import sleep
+from hardware.led import LEDs
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -24,13 +25,16 @@ RECOGNIZER_MODEL = (
 
 def main():
     lcd = LCD(address=0x27)
+    leds = LEDs(red_pin=17, blue_pin=27, green_pin=22)
 
+    leds.red_on()
     print("-> Starting Attendance System")
     lcd.show_ready()
 
     initialize_database()
     print("-> Database initialized successfully.")
 
+    leds.blue_on()
     if is_internet_available():
         print("-> Internet available.")
         lcd.show_syncing()
@@ -40,6 +44,7 @@ def main():
         print("-> Internet unavailable. Running offline.")
         lcd.show_offline()
 
+    leds.green_on()
     sleep(2)
 
     lcd.show_ready()
@@ -57,6 +62,8 @@ def main():
 
     if not display_detected:
         print("-> GUI not detected, running headless")
+
+    leds.all_off()
     try:
         while True:
             lcd.show_recognizing()
@@ -97,16 +104,19 @@ def main():
                         f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
 
                     if action == "IN":
+                        leds.green_on()
                         lcd.show_welcome(name)
                         sleep(2)
                         lcd.show_entry()
                         sleep(5)
                     elif action == "OUT":
+                        leds.blue_on()
                         lcd.show_exit()
                         sleep(5)
                     elif action == "IGNORE":
                         pass
                     elif action == "ERROR":
+                        leds.red_on()
                         lcd.show_error()
                         sleep(2)
                         print(f"Attendance error for {name}")
@@ -141,6 +151,7 @@ def main():
                         print("-> Internet unavailable. Running offline.")
                         lcd.show_offline()
 
+            leds.all_off()
     finally:
         camera.stop()
         lcd.close()
