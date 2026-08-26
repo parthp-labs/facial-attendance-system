@@ -2,17 +2,37 @@ import cv2
 
 
 class Camera:
-    def __init__(self, camera_index=0):
+    def __init__(self, camera_index=0, width=640, height=480, fps=30):
         self.camera_index = camera_index
+        self.width = width
+        self.height = height
+        self.fps = fps
         self.capture = None
 
     def start(self):
-        self.capture = cv2.VideoCapture(self.camera_index)
+        self.capture = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
 
         if not self.capture.isOpened():
-            raise RuntimeError(
-                f"Could not open camera {self.camera_index}"
-            )
+            raise RuntimeError(f"Could not open camera {self.camera_index}")
+
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+
+        # Request FPS
+        self.capture.set(cv2.CAP_PROP_FPS, self.fps)
+
+        # Use MJPEG if supported by the camera.
+        # This reduces USB bandwidth.
+        self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+
+        # Print actual camera settings
+        actual_width = self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        actual_height = self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        actual_fps = self.capture.get(cv2.CAP_PROP_FPS)
+
+        print(
+            f"-> Camera: "f"{int(actual_width)}x{int(actual_height)} "f"@ {actual_fps:.1f} FPS")
 
     def draw_rect(self, face, frame, color=(255, 0, 0)):
         x, y, width, height = face[:4]
