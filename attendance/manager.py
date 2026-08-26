@@ -7,7 +7,7 @@ from database.database import (
     DATABASE_PATH,
 )
 from datetime import datetime, timedelta
-COOLDOWN_SECONDS = 5
+COOLDOWN_SECONDS = 30
 
 
 def process_attendance(
