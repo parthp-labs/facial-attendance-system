@@ -12,17 +12,33 @@ class LCD:
             charmap='A00'
         )
 
+        # Cache last displayed content to skip redundant I2C writes (~70ms each)
+        self._last_line1 = None
+        self._last_line2 = None
+
     def clear(self):
         self.lcd.clear()
+        self._last_line1 = None
+        self._last_line2 = None
 
     def show(self, line1="", line2=""):
+        line1 = line1[:16]
+        line2 = line2[:16]
+
+        # Skip writing if the display already shows the same content
+        if line1 == self._last_line1 and line2 == self._last_line2:
+            return
+
         self.lcd.clear()
 
         self.lcd.cursor_pos = (0, 0)
-        self.lcd.write_string(line1[:16])
+        self.lcd.write_string(line1)
 
         self.lcd.cursor_pos = (1, 0)
-        self.lcd.write_string(line2[:16])
+        self.lcd.write_string(line2)
+
+        self._last_line1 = line1
+        self._last_line2 = line2
 
     def show_ready(self):
         self.show(
@@ -98,3 +114,5 @@ class LCD:
 
     def close(self):
         self.lcd.clear()
+        self._last_line1 = None
+        self._last_line2 = None
