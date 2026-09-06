@@ -90,7 +90,7 @@ def main():
 
             # Starting recognizing session
             session_start = time()
-            session_duration = 30
+            session_duration = 8
             session_active = True
 
             lcd.show_recognizing()
