@@ -71,6 +71,11 @@ class Camera:
             2
         )
 
+    def flush(self, count=5):
+        if self.capture is not None and self.capture.isOpened():
+            for _ in range(count):
+                self.capture.grab()
+
     def read(self):
         if self.capture is None:
             raise RuntimeError("Camera has not been started")

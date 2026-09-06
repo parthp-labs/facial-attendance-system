@@ -12,6 +12,7 @@ from hardware.lcd import LCD
 from time import sleep, time
 from hardware.led import LEDs
 from gpiozero import Button
+from hardware.rtc import RTC
 
 DETECTOR_MODEL = (
     "models/face_detection/"
@@ -28,6 +29,7 @@ def main():
     lcd = LCD(address=0x27)
     leds = LEDs(red_pin=17, blue_pin=27, green_pin=22)
     button = Button(10)
+    rtc = RTC()
 
     leds.red_on()
     print("-> Starting Attendance System")
@@ -60,6 +62,8 @@ def main():
 
     # Initializing Camera
     camera = Camera()
+    camera.start()
+    print("-> Camera started and ready.")
 
     detector = FaceDetector(DETECTOR_MODEL)
     recognizer = FaceRecognizer(RECOGNIZER_MODEL)
@@ -81,9 +85,8 @@ def main():
 
             print("-> Button pressed")
 
-            # Starting Camera
-            camera.start()
-            print("-> Camera Started")
+            # Flush stale frames so recognition immediately gets the current live frame
+            camera.flush()
 
             # Starting recognizing session
             session_start = time()
@@ -126,8 +129,8 @@ def main():
                     if person is not None:
                         person_id, name, blob, sheet_id = person
                         person_recognized = True
-                        date = get_current_date()
-                        current_time = get_current_time()
+                        date = rtc.get_date()
+                        current_time = rtc.get_time()
 
                         # Updating local database
                         action, attendance_id, state = process_attendance(
@@ -208,10 +211,6 @@ def main():
             leds.all_off()
             lcd.show_ready()
 
-            # Stopping camera
-            camera.stop()
-            print("-> Camera Stopped")
-
             if display_detected:
                 cv2.destroyWindow("Attendance")
 
@@ -220,6 +219,7 @@ def main():
         camera.stop()
         lcd.close()
         button.close()
+        rtc.close()
         if display_detected:
             cv2.destroyAllWindows()
         print("-> Camera stopped")
