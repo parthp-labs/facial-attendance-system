@@ -2,7 +2,7 @@ import cv2
 
 
 class Camera:
-    def __init__(self, camera_index=0, width=640, height=480, fps=30):
+    def __init__(self, camera_index=0, width=640, height=480, fps=15):
         self.camera_index = camera_index
         self.width = width
         self.height = height
@@ -19,8 +19,11 @@ class Camera:
 
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
-        # Request FPS
+        # Request FPS (15 FPS cuts MJPEG decoding CPU load in half compared to 30 FPS)
         self.capture.set(cv2.CAP_PROP_FPS, self.fps)
+
+        # Request minimal driver buffer size to reduce frame latency
+        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
         # Use MJPEG if supported by the camera.
         # This reduces USB bandwidth.
