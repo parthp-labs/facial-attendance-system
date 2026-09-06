@@ -26,6 +26,9 @@ RECOGNIZER_MODEL = (
 
 
 def main():
+    # Limit OpenCV threads to prevent thermal spikes on quad-core Cortex-A53
+    cv2.setNumThreads(2)
+
     lcd = LCD(address=0x27)
     leds = LEDs(red_pin=17, blue_pin=27, green_pin=22)
     button = Button(10)
@@ -92,6 +95,7 @@ def main():
             session_start = time()
             session_duration = 8
             session_active = True
+            session_processed = False
 
             lcd.show_recognizing()
             print("-> Recognition started")
@@ -101,17 +105,12 @@ def main():
                 frame = camera.read()
                 faces = detector.detect(frame)
                 if len(faces) == 0:
-                    print("-> No face detected")
-                    lcd.show("Detection Started", "No face")
-                    leds.red_on()
-                    sleep(2)
-                    leds.all_off()
+                    sleep(0.05)
                     continue
 
                 # ------------------------------------------
                 # Process detected face
                 # ------------------------------------------
-                person_recognized = False
                 for face in faces:
                     camera.draw_rect(face, frame)
 
@@ -127,8 +126,8 @@ def main():
 
                     # When person is detected
                     if person is not None:
+                        session_processed = True
                         person_id, name, blob, sheet_id = person
-                        person_recognized = True
                         date = rtc.get_date()
                         current_time = rtc.get_time()
 
@@ -142,19 +141,19 @@ def main():
                             f"{action}"
                         )
                         print(
-                            f"Recognized: {name} "f"(similarity={similarity:.3f}) "f"Action={action}")
+                            f"Recognized: {name} (similarity={similarity:.3f}) Action={action}")
 
                         if action == "IN":
                             leds.green_on()
                             lcd.show_welcome(name)
-                            sleep(2)
+                            sleep(1.0)
                             lcd.show_entry()
-                            sleep(5)
+                            sleep(1.5)
                             session_active = False
                         elif action == "OUT":
                             leds.blue_on()
                             lcd.show_exit()
-                            sleep(5)
+                            sleep(2.0)
                             session_active = False
                         elif action == "IGNORE":
                             leds.green_on()
@@ -163,24 +162,25 @@ def main():
                             elif state == "EXITED":
                                 lcd.show("Already Exited", name)
 
-                            sleep(3)
+                            sleep(1.5)
                             session_active = False
                         elif action == "ERROR":
                             leds.red_on()
                             lcd.show_error()
-                            sleep(2)
+                            sleep(1.5)
                             print(f"Attendance error for {name}")
                             session_active = False
 
                         camera.show_label(face, frame, label)
                     else:
-                        label = (f"Unknown "f"{similarity:.2f}")
+                        session_processed = True
+                        label = f"Unknown {similarity:.2f}"
                         camera.show_label(face, frame, label)
-                        sleep(2)
                         print(label)
                         lcd.show_unknown()
                         leds.red_on()
-                        sleep(2)
+                        sleep(1.5)
+                        session_active = False
                         break
 
                 # Displaying camera frame
@@ -207,6 +207,12 @@ def main():
                         else:
                             print("-> Internet unavailable. Running offline.")
                             lcd.show_offline()
+
+            if not session_processed:
+                print("-> No face detected within timeout")
+                lcd.show("No Face Detected", "Try Again")
+                leds.red_on()
+                sleep(1.5)
 
             leds.all_off()
             lcd.show_ready()
