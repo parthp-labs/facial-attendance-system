@@ -9,3 +9,4 @@ pynput==1.8.2
 RPLCD==1.4.0
 smbus2==0.6.1
 lgpio
+gpiozero
