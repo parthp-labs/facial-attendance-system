@@ -14,9 +14,21 @@ class AttendanceAlreadyExistsError(DatabaseError):
     pass
 
 
+class PersonAlreadyExistsError(DatabaseError):
+    """Person with this name already exists."""
+    pass
+
+
+class PersonNotFoundError(DatabaseError):
+    """Person with the given ID or name was not found."""
+    pass
+
+
 def get_connection(database_path=DATABASE_PATH):
     try:
-        return sqlite3.connect(database_path)
+        connection = sqlite3.connect(database_path, timeout=10.0)
+        connection.execute("PRAGMA foreign_keys = ON;")
+        return connection
     except sqlite3.Error as e:
         raise DatabaseError(f"Could not connect to database: {e}") from e
 
@@ -127,7 +139,18 @@ def mark_attendance_synced(attendance_id, database_path=DATABASE_PATH):
             connection.close()
 
 
-def add_person(name, face_encoding, database_path=DATABASE_PATH):
+def add_person(name, face_encoding, database_path=DATABASE_PATH, sheet_id=None, allow_duplicate=False):
+    name = str(name).strip()
+    if not name:
+        raise ValueError("Person name cannot be empty.")
+
+    if not allow_duplicate:
+        existing = get_person_by_name(name, database_path)
+        if existing:
+            raise PersonAlreadyExistsError(
+                f"Person with name '{name}' already exists (ID: {existing[0]})."
+            )
+
     connection = None
 
     try:
@@ -137,10 +160,11 @@ def add_person(name, face_encoding, database_path=DATABASE_PATH):
         cursor.execute("""
             INSERT INTO persons (
                 name,
-                face_encoding
+                face_encoding,
+                sheet_id
             )
-            VALUES (?, ?)
-        """, (name, face_encoding))
+            VALUES (?, ?, ?)
+        """, (name, face_encoding, sheet_id))
 
         person_id = cursor.lastrowid
 
@@ -154,6 +178,64 @@ def add_person(name, face_encoding, database_path=DATABASE_PATH):
 
         raise DatabaseError(
             f"Failed to add person: {e}"
+        ) from e
+
+    finally:
+        if connection:
+            connection.close()
+
+
+def update_person_face_encoding(person_id, face_encoding, database_path=DATABASE_PATH):
+    connection = None
+
+    try:
+        connection = get_connection(database_path)
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            UPDATE persons
+            SET face_encoding = ?
+            WHERE id = ?
+        """, (face_encoding, person_id))
+
+        if cursor.rowcount == 0:
+            raise PersonNotFoundError(f"Person ID {person_id} does not exist.")
+
+        connection.commit()
+
+    except sqlite3.Error as e:
+        if connection:
+            connection.rollback()
+
+        raise DatabaseError(
+            f"Failed to update face encoding for person {person_id}: {e}"
+        ) from e
+
+    finally:
+        if connection:
+            connection.close()
+
+
+def delete_person(person_id, database_path=DATABASE_PATH):
+    connection = None
+
+    try:
+        connection = get_connection(database_path)
+        cursor = connection.cursor()
+
+        cursor.execute("DELETE FROM persons WHERE id = ?", (person_id,))
+
+        if cursor.rowcount == 0:
+            raise PersonNotFoundError(f"Person ID {person_id} does not exist.")
+
+        connection.commit()
+
+    except sqlite3.Error as e:
+        if connection:
+            connection.rollback()
+
+        raise DatabaseError(
+            f"Failed to delete person {person_id}: {e}"
         ) from e
 
     finally:

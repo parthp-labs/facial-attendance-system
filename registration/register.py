@@ -8,7 +8,12 @@ from camera.camera import Camera
 from recognition.detector import FaceDetector
 from recognition.recognizer import FaceRecognizer
 from recognition.encoding import serialize_embedding
-from database.database import add_person, update_sheet_id
+from database.database import (
+    add_person,
+    update_sheet_id,
+    get_person_by_name,
+    update_person_face_encoding,
+)
 from utils.display import gui_available
 from google_sync.sheets import create_person_sheet
 
@@ -27,6 +32,26 @@ def main():
     if not name:
         print("Name cannot be empty.")
         return
+
+    existing = get_person_by_name(name)
+    update_mode = False
+    target_person_id = None
+    existing_sheet_id = None
+
+    if existing:
+        print(
+            f"\n[Notice] A person named '{name}' is already registered (ID: {existing[0]})."
+        )
+        print("  [1] Update face embedding for this existing person")
+        print("  [2] Cancel registration")
+        choice = input("Enter choice [1/2]: ").strip()
+        if choice == "1":
+            update_mode = True
+            target_person_id = existing[0]
+            existing_sheet_id = existing[3]
+        else:
+            print("Registration cancelled.")
+            return
 
     detector = FaceDetector(DETECTOR_MODEL)
     recognizer = FaceRecognizer(RECOGNIZER_MODEL)
@@ -80,14 +105,35 @@ def main():
                 embedding = recognizer.get_embedding(aligned_face)
                 face_encoding = serialize_embedding(embedding)
 
-                person_id = add_person(name, face_encoding)
-                worksheet = create_person_sheet(name)
-                update_sheet_id(person_id, str(worksheet.id))
+                sheet_id = existing_sheet_id
+                try:
+                    worksheet = create_person_sheet(name, reuse_existing=True)
+                    sheet_id = str(worksheet.id)
+                    print(
+                        f"\rGoogle worksheet linked: {worksheet.title} (ID: {sheet_id})")
+                except Exception as e:
+                    print(
+                        f"\r[Notice] Could not link Google Sheets ({e}). Registration will proceed locally."
+                    )
 
-                print(f"\rRegistered {name}")
-                print(f"Google worksheet created: {worksheet.title}")
-                print(f"Sheet ID: {worksheet.id}")
-                print(f"Person registered successfully. ID: {person_id}")
+                if update_mode:
+                    update_person_face_encoding(
+                        target_person_id, face_encoding)
+                    if sheet_id and sheet_id != existing_sheet_id:
+                        update_sheet_id(target_person_id, sheet_id)
+                    print(
+                        f"\rSuccessfully updated face embedding for {name} (ID: {target_person_id})"
+                    )
+                else:
+                    person_id = add_person(
+                        name,
+                        face_encoding,
+                        sheet_id=sheet_id,
+                    )
+                    print(
+                        f"\rPerson registered successfully: {name} (ID: {person_id})"
+                    )
+
                 break
 
     finally:

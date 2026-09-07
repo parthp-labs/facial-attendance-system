@@ -14,10 +14,11 @@ def process_attendance(
     person_id,
     date,
     current_time,
+    database_path=DATABASE_PATH,
 ):
     try:
         """Get Today's Attendance"""
-        attendance = get_today_attendance(person_id, date, DATABASE_PATH)
+        attendance = get_today_attendance(person_id, date, database_path)
 
         """No Attendance Today -> New Entry"""
         if attendance is None:
@@ -26,7 +27,7 @@ def process_attendance(
                     person_id,
                     date,
                     current_time,
-                    DATABASE_PATH
+                    database_path
                 )
 
                 return (
@@ -36,9 +37,9 @@ def process_attendance(
                 )
             # Entry already exists
             except AttendanceAlreadyExistsError:
-                print("Attendance already exists for", attendance[1])
+                print(f"Attendance already exists for person {person_id}")
                 attendance = get_today_attendance(
-                    person_id, date, DATABASE_PATH)
+                    person_id, date, database_path)
 
                 if attendance is not None:
                     return ("IGNORE", attendance[0], "INSIDE")
@@ -84,7 +85,7 @@ def process_attendance(
         if current_datetime < entry_datetime:
             print("Current time is earlier than entry time.")
 
-            return ("ERROR", attendance_id)
+            return ("ERROR", attendance_id, "ERROR")
 
         # Calculating time since entry to compare with cooldown
         elapsed = current_datetime - entry_datetime
@@ -92,7 +93,7 @@ def process_attendance(
             return ("IGNORE", attendance_id, "INSIDE")
 
         try:
-            create_exit(attendance_id, current_time, DATABASE_PATH)
+            create_exit(attendance_id, current_time, database_path)
 
             return ("OUT", attendance_id, "EXITED")
         except Exception as e:
