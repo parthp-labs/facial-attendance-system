@@ -9,3 +9,4 @@ data/encodings/*
 .env
 /test_images
 credentials.json
+.pytest_cache
