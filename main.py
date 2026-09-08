@@ -25,13 +25,37 @@ RECOGNIZER_MODEL = (
 )
 
 
+def perform_sync(lcd, leds):
+    leds.blue_on()
+    if is_internet_available():
+        print("-> Internet available. Syncing database...")
+        lcd.show_syncing()
+        try:
+            sync_database()
+            lcd.show_sync_success()
+            leds.green_on()
+        except Exception as e:
+            print(f"-> Sync failed: {e}")
+            lcd.show_sync_failed()
+            leds.red_on()
+    else:
+        print("-> Internet unavailable. Running offline.")
+        lcd.show_offline()
+        leds.red_on()
+
+    sleep(1.5)
+    leds.all_off()
+    lcd.show_ready()
+
+
 def main():
     # Limit OpenCV threads to prevent thermal spikes on quad-core Cortex-A53
     cv2.setNumThreads(2)
 
     lcd = LCD(address=0x27)
     leds = LEDs(red_pin=17, blue_pin=27, green_pin=22)
-    button = Button(10)
+    start_button = Button(10)
+    sync_button = Button(11)
     rtc = RTC()
 
     leds.red_on()
@@ -42,20 +66,8 @@ def main():
     initialize_database()
     print("-> Database initialized successfully.")
 
-    leds.blue_on()
-
     # Initiating Google Sheets sync
-    if is_internet_available():
-        print("-> Internet available.")
-        lcd.show_syncing()
-        sync_database()
-        lcd.show_sync_success()
-    else:
-        print("-> Internet unavailable. Running offline.")
-        lcd.show_offline()
-
-    leds.green_on()
-    sleep(2)
+    perform_sync(lcd, leds)
 
     # Loading persons
     lcd.show_ready()
@@ -83,10 +95,22 @@ def main():
         while True:
             # Waiting for button press
             lcd.show_ready()
-            print("-> Waiting for button...")
-            button.wait_for_press()
+            leds.all_off()
 
-            print("-> Button pressed")
+            print("-> Waiting for button (start or sync)...")
+            while not start_button.is_pressed and not sync_button.is_pressed:
+                sleep(0.05)
+
+            if sync_button.is_pressed:
+                print("-> Sync button pressed")
+                while sync_button.is_pressed:
+                    sleep(0.05)
+                perform_sync(lcd, leds)
+                continue
+
+            print("-> Start button pressed")
+            while start_button.is_pressed:
+                sleep(0.05)
 
             # Flush stale frames so recognition immediately gets the current live frame
             camera.flush()
@@ -108,9 +132,7 @@ def main():
                     sleep(0.05)
                     continue
 
-                # ------------------------------------------
                 # Process detected face
-                # ------------------------------------------
                 for face in faces:
                     camera.draw_rect(face, frame)
 
@@ -224,7 +246,8 @@ def main():
     finally:
         camera.stop()
         lcd.close()
-        button.close()
+        start_button.close()
+        sync_button.close()
         rtc.close()
         if display_detected:
             cv2.destroyAllWindows()
